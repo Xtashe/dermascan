@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic Results | Clinical DermaScan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-hospital: #f8fafc;
+            --panel-bg: #ffffff;
+            --medical-red: #e11d48;
+            --medical-pink-light: #fff1f2;
+            --medical-pink-border: #fecdd3;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-subtle: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-hospital);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .dashboard-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-subtle);
+            border-top: 5px solid var(--medical-red);
+            border-radius: 20px;
+            max-width: 580px;
+            width: 100%;
+            padding: 40px;
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+            text-align: center;
+        }
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #0f172a; }
+        .result-box {
+            background: var(--medical-pink-light);
+            border: 1px solid var(--medical-pink-border);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .prediction-title { font-size: 20px; font-weight: 800; color: var(--medical-red); text-transform: uppercase; }
+        .confidence { font-size: 14px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+        .uploaded-img { max-height: 200px; border-radius: 10px; margin-bottom: 16px; object-fit: cover; border: 1px solid var(--border-subtle); }
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            background: var(--text-main);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .back-btn:hover { background: #334155; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-card">
+        <h1>Diagnostic Classification Result</h1>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">AI Model Inference Complete</p>
+
+        {% if image_filename %}
+            <img src="{{ url_for('static', filename='uploads/' + image_filename) }}" alt="Scanned Lesion" class="uploaded-img">
+        {% endif %}
+
+        <div class="result-box">
+            <div class="prediction-title">{{ prediction }}</div>
+            <div class="confidence">Confidence Score: {{ confidence }}</div>
+        </div>
+
+        <a href="{{ url_for('index') }}" class="back-btn">← Screen Another Lesion</a>
+    </div>
+</body>
+</html>

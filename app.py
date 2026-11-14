@@ -6,7 +6,8 @@ from src.predict import predictor  # Import our fully operational model predicto
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_flash_messages'
 
-UPLOAD_FOLDER = 'uploads'
+# Updated to save inside static folder so Flask can serve images instantly
+UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 

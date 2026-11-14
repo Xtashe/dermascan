@@ -1,6 +1,13 @@
+.venv/
+venv/
+.env
+.env.*
+__pycache__/
+*.pyc
 dataset/
 uploads/
 model/*.pth
-__pycache__/
-venv/
-.env.venv/
+*.pt
+*.pth
+*.dll
+desktop.ini
