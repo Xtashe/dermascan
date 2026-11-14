@@ -1,53 +1,111 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+
+# Limit CPU threads BEFORE importing PyTorch
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+import gc
+import uuid
+
+from flask import (
+    Flask, render_template, request,
+    redirect, url_for, flash
+)
 from werkzeug.utils import secure_filename
-from src.predict import predictor  # Import our fully operational model predictor
+
+from src.predict import predictor
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_key_for_flash_messages'
 
-# Updated to save inside static folder so Flask can serve images instantly
-UPLOAD_FOLDER = 'static/uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = os.environ.get(
+    "SECRET_KEY", "dermascan-development-key"
+)
+
+UPLOAD_FOLDER = "static/uploads"
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower()
+        in ALLOWED_EXTENSIONS
+    )
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
+
+@app.route("/predict", methods=["POST"])
 def predict():
-    if 'file' not in request.files:
-        flash('No file part in the request.')
-        return redirect(request.url)
-    
-    file = request.files['file']
-    if file.filename == '':
-        flash('No image selected for uploading.')
-        return redirect(url_for('index'))
-        
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    if "file" not in request.files:
+        flash("No file selected.")
+        return redirect(url_for("index"))
+
+    file = request.files["file"]
+
+    if not file.filename:
+        flash("Please select an image.")
+        return redirect(url_for("index"))
+
+    if not allowed_file(file.filename):
+        flash("Only PNG, JPG and JPEG images are allowed.")
+        return redirect(url_for("index"))
+
+    filename = secure_filename(file.filename)
+
+    if not filename:
+        flash("Invalid filename.")
+        return redirect(url_for("index"))
+
+    # Unique filename prevents upload collisions
+    extension = filename.rsplit(".", 1)[1].lower()
+    filename = f"{uuid.uuid4().hex}.{extension}"
+
+    filepath = os.path.join(
+        app.config["UPLOAD_FOLDER"], filename
+    )
+
+    try:
         file.save(filepath)
-        
-        # Run real AI inference using our MobileNetV3 model
-        prediction_result, confidence_score = predictor.predict_image(filepath)
-        
+
+        # Run AI prediction
+        prediction_result, confidence_score = (
+            predictor.predict_image(filepath)
+        )
+
         return render_template(
-            'result.html', 
-            prediction=prediction_result, 
-            confidence=confidence_score, 
+            "result.html",
+            prediction=prediction_result,
+            confidence=confidence_score,
             image_filename=filename
         )
-    else:
-        flash('Allowed image types are -> png, jpg, jpeg')
-        return redirect(url_for('index'))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    except Exception:
+        app.logger.exception("Prediction failed")
+        flash("Prediction failed. Please try another image.")
+        return redirect(url_for("index"))
+
+    finally:
+        gc.collect()
+
+
+@app.errorhandler(413)
+def file_too_large(error):
+    flash("Image size must be below 5 MB.")
+    return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    app.run(debug=False)
