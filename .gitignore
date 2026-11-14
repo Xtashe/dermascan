@@ -6,7 +6,6 @@ __pycache__/
 *.pyc
 dataset/
 uploads/
-model/*.pth
 *.pt
 *.pth
 *.dll
